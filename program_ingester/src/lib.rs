@@ -1,4 +1,4 @@
-//! A crate for injesting Program Features and emitting Hierarchical structures of the programs.
+//! A crate for ingesting Program Features and emitting Hierarchical structures of the programs.
 //!
 //! # Example
 //!
@@ -106,7 +106,7 @@ mod test {
                             .expect("test dates should be checked"),
                         end: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
                             .expect("test dates should be checked"),
-                        subfeatures: [
+                        subfeatures: vec![
                             Feature {
                                 id: "Calendar_Scheduling".into(),
                                 progress_status: "Complete".into(),

@@ -3,7 +3,7 @@ use std::io;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum ProgramInjestorError {
+pub enum ProgramIngestorError {
     #[error("The program input is not valid: {0}")]
     InvalidProgramInput(String),
 

@@ -6,7 +6,7 @@ use std::{
 
 use chrono::{DateTime, FixedOffset};
 
-use crate::errors::ProgramInjestorError;
+use crate::errors::ProgramIngestorError;
 
 /// The main entrypoint
 pub struct Ingester {
@@ -15,7 +15,7 @@ pub struct Ingester {
 
 // // Todo: make this work to produce a vec of features from a reader (eg: file, stdin, etc...)
 impl<R: Read> TryFrom<BufReader<R>> for Ingester {
-    type Error = crate::errors::ProgramInjestorError;
+    type Error = crate::errors::ProgramIngestorError;
 
     fn try_from(mut reader: BufReader<R>) -> Result<Self, Self::Error> {
         let mut features = vec![];
@@ -74,7 +74,7 @@ impl RawFeature {
 }
 
 impl TryFrom<String> for RawFeature {
-    type Error = crate::errors::ProgramInjestorError;
+    type Error = crate::errors::ProgramIngestorError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
         RawFeature::from_str(value.as_str())
@@ -82,7 +82,7 @@ impl TryFrom<String> for RawFeature {
 }
 
 impl FromStr for RawFeature {
-    type Err = crate::errors::ProgramInjestorError;
+    type Err = crate::errors::ProgramIngestorError;
 
     /// Try to turn a program log line into a feature
     ///
@@ -91,7 +91,7 @@ impl FromStr for RawFeature {
         let parts: Vec<&str> = s.trim().split(" ").collect();
         // We should have 6 parts.
         if parts.len() != 6 {
-            return Err(ProgramInjestorError::InvalidProgramInput(format!(
+            return Err(ProgramIngestorError::InvalidProgramInput(format!(
                 "The feature '{s}' needs to have 5 parts, start, end, program, progress_status, assigned_team, feature-relation"
             )));
         }
@@ -103,7 +103,7 @@ impl FromStr for RawFeature {
         let feature_ids: Vec<&str> = last_part.split("->").collect();
 
         if feature_ids.len() != 2 {
-            return Err(ProgramInjestorError::InvalidProgramInput(format!("The feature-relation '{s}' needs to have 5 parts, start, end, program, progress_status, feature-relation")));
+            return Err(ProgramIngestorError::InvalidProgramInput(format!("The feature-relation '{s}' needs to have 5 parts, start, end, program, progress_status, feature-relation")));
         }
 
         Ok(RawFeature {
