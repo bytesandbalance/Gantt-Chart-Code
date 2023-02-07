@@ -210,9 +210,9 @@ mod test {
                 program_id: "t1".into(),
                 assigned_team: "s1".into(),
                 progress_status: "s1".into(),
-                start_time: DateTime::parse_from_rfc3339("2016-10-20T12:33:34.000Z")
+                start_time: DateTime::parse_from_rfc3339("2023-10-01T00:00:00.000Z")
                     .expect("test dates should be checked"),
-                end_time: DateTime::parse_from_rfc3339("2016-10-20T12:43:34.000Z")
+                end_time: DateTime::parse_from_rfc3339("2023-11-30T00:00:00.000Z")
                     .expect("test dates should be checked"),
             },
             RawFeature {
@@ -221,9 +221,9 @@ mod test {
                 program_id: "t1".into(),
                 assigned_team: "s1".into(),
                 progress_status: "s2".into(),
-                start_time: DateTime::parse_from_rfc3339("2016-10-20T12:38:34.000Z")
+                start_time: DateTime::parse_from_rfc3339("2023-10-20T00:00:00.000Z")
                     .expect("test dates should be checked"),
-                end_time: DateTime::parse_from_rfc3339("2016-10-20T12:39:34.000Z")
+                end_time: DateTime::parse_from_rfc3339("2023-11-20T00:00:00.000Z")
                     .expect("test dates should be checked"),
             },
         ];
@@ -235,17 +235,17 @@ mod test {
                     id: "a".into(),
                     progress_status: "s1".into(),
                     assigned_team: "s1".into(),
-                    start: DateTime::parse_from_rfc3339("2016-10-20T12:33:34.000Z")
+                    start: DateTime::parse_from_rfc3339("2023-10-01T00:00:00.000Z")
                         .expect("test dates should be checked"),
-                    end: DateTime::parse_from_rfc3339("2016-10-20T12:43:34.000Z")
+                    end: DateTime::parse_from_rfc3339("2023-11-30T00:00:00.000Z")
                         .expect("test dates should be checked"),
                     subfeatures: vec![Feature {
                         id: "b".into(),
                         progress_status: "s2".into(),
                         assigned_team: "s1".into(),
-                        start: DateTime::parse_from_rfc3339("2016-10-20T12:38:34.000Z")
+                        start: DateTime::parse_from_rfc3339("2023-10-20T00:00:00.000Z")
                             .expect("test dates should be checked"),
-                        end: DateTime::parse_from_rfc3339("2016-10-20T12:39:34.000Z")
+                        end: DateTime::parse_from_rfc3339("2023-11-20T00:00:00.000Z")
                             .expect("test dates should be checked"),
                         subfeatures: vec![],
                     }],

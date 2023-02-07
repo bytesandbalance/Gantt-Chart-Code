@@ -89,7 +89,7 @@ impl FromStr for RawFeature {
     /// Example: `2016-10-20T12:43:34.000Z 2016-10-20T12:43:35.000Z program1 back-end-3 ac->ad`
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.trim().split(" ").collect();
-        // We should have 5 parts.
+        // We should have 6 parts.
         if parts.len() != 6 {
             return Err(ProgramInjestorError::InvalidProgramInput(format!(
                 "The feature '{s}' needs to have 5 parts, start, end, program, progress_status, assigned_team, feature-relation"
