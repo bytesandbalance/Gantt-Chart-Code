@@ -5,22 +5,23 @@ A Gantt chart is a type of bar chart that illustrates a project schedule, named 
 Our program aims to convert the components of a Gannt diagram into a JSON representation. This allows for the data to be more easily accessible and processed for further analysis and use.
 
 
-## Introduction
+### Introduction
 
-I will discuss a problem of representing a set of features and their children in a structured manner. The features are defined by start and end dates, program ID, progress status, assigned team, and parent feature/module. The goal is to convert this information into a JSON representation for easier processing and analysis.
+I will discuss a problem of representing a set of features and their children in a structured manner. The features are defined by start and end dates, program ID, progress status, assigned team, and parent feature/module. The goal is to convert this information into a JSON representation.
 
 Problem Statement:
 
 Given a set of features defined by the following lines:
 
-Start_Date End_Date Program_ID Progress_Status Assigned_Team Parent Feature/Module
+_[StartDate] [EndDate] [ProgramID] [ProgressStatus] [AssignedTeam] [Parent Feature]->[Module]_
 
 ```txt
-2023-01-01 2023-12-31 program_1 In_Progress Team_A null->Productivity_Suite
-2023-01-01 2023-06-30 program_1 Complete Team_B Productivity_Suite->Email
-2023-01-01 2023-04-30 program_1 Complete Team_B Email->Email_Search
-2023-05-01 2023-06-30 program_1 Complete Team_B Email->Email_Filters
+2023-01-01 2023-12-31 program1 InProgress TeamA null->ProductivitySuite
+2023-01-01 2023-06-30 program1 Complete TeamB ProductivitySuite->Email
+2023-01-01 2023-04-30 program1 Complete TeamB Email->EmailSearch
+2023-05-01 2023-06-30 program1 Complete TeamB Email->EmailFilters
 ```
+**Warning**: The code uses `chrono::DateTime`. I need to change to `chrono:Date` to ignore the time component.
 
 The task is to convert this information into a JSON representation that includes all the features and their children. The resulting JSON should be structured in such a way that it is easy to process and analyze.
 
@@ -28,9 +29,9 @@ The input data will be stored in a text file, and the solution should be able to
 
 ```json
 {
-    "id": "program_1",
+    "id": "program1",
     "root": {
-        "feature": "Productivity_Suite",
+        "feature": "ProductivitySuite",
         "start": "2023-01-01T00:00:00.000Z",
         "end": "2023-12-31T00:00:00.000Z",
         "subfeatures": [
@@ -40,49 +41,54 @@ The input data will be stored in a text file, and the solution should be able to
                 "end": "2023-06-30T00:00:00.000Z",
                 "subfeatures": [
                     {
-                        "feature": "Email_Search",
+                        "feature": "EmailSearch",
                         "start": "2023-01-01T00:00:00.000Z",
                         "end": "2023-04-30T00:00:00.000Z",
                         "subfeatures": [],
-                        "progress_status": "Complete",
-                        "assigned_team": "Team_B"
+                        "ProgressStatus": "Complete",
+                        "AssignedTeam": "TeamB"
                     },
                     {
-                        "feature": "Email_Filters",
+                        "feature": "EmailFilters",
                         "start": "2023-05-01T00:00:00.000Z",
                         "end": "2023-06-301T00:00:00.000Z",
                         "subfeatures": [],
-                        "progress_status": "Complete",
-                        "assigned_team": "Team_B"
+                        "ProgressStatus": "Complete",
+                        "AssignedTeam": "TeamB"
                     }
                 ]
             }
         ],
-        "progress_status": "Complete",
-        "assigned_team": "Team_A"
+        "ProgressStatus": "Complete",
+        "AssignedTeam": "TeamA"
     }
 }
 ```
 
-# Code Structure
+## Workspace members
 
-- input.rs contains the implementation of all the structs that represent raw input and the transformations performed on the raw input. It also implements traits for the structs, which are used to define the behavior of the structs in the program.
+### Program Ingester
+- `input.rs` contains the implementation of all the structs that represent raw input. It also implements traits for the structs, which are used to define the behavior of the structs in the program.
 
-- errors.rs contains an Enum that represents all the errors related to invalid Input/Output (IO), invalid timestamps, or invalid program input. The Enum allows for easy handling of errors in the program by grouping them into a defined set of cases.
+- `errors.rs` contains an Enum that represents all the errors related to invalid Input/Output (IO), invalid timestamps, or invalid program input. The Enum allows for easy handling of errors in the program by grouping them into a defined set of cases.
 
-- output.rs is responsible for converting a vector of raw features into a hierarchical graph struct. This struct is used to represent the data in a structured manner, making it easier to manipulate and analyze.
+- `output.rs` is responsible for converting a vector of raw features into a hierarchical graph struct. This struct is used to represent the data in a structured manner, making it easier to manipulate and analyze.
 
-- Finally, lib.rs acts as the main entry point for the program, declaring all the three public modules. By declaring the modules as public, they are accessible from outside the crate, allowing for easy reuse and modularization of code.
+- Finally, `lib.rs` is the root of the library, pulling in the previously mentioned modules and leaves implementation to another create (eg: the `cli`, or anyone else that want's to implement it different, like in a web server instead of CLI).
 
-## Input
+#### Input
 
 The input crate is responsible for defining the input structs and implementing the required traits for reading and parsing the input data. The crate contains two main structs, `Ingester` and `R`awFeature`.
 
-### Ingester
 
-The `Ingester` struct has a single public field features, which is a vector of `RawFeatures`. This struct implements the `TryFrom` trait, which allows converting an instance of `BufReader<R>` (where `R` implements the Read trait) into an instance of `Ingester`.
+##### Ingester
+
+The `Ingester` struct has a single public field features, which is a vector of `RawFeatures`. `Ingester` implements the `TryFrom` trait, which allows converting an instance of `BufReader<R>` (where `R` implements the Read trait) into an instance of `Ingester`.
 
 The implementation of the `TryFrom` trait for `Ingester` reads lines from the `BufReader<R>` using the `read_line` method, removes the trailing newline character, converts the line to a `RawFeature` using the `f`rom_str` method, and pushes the `RawFeature` to the features vector. If any errors occur during the reading or conversion process, the implementation returns an `Err` variant of the Result, with the error being of type `crate::errors::ProgramIngesterError`.
+
+**Note** The reason we use `while reader.read_line()` instead of iterating over the lines with `map` is because the latter allocates a string for each iteration, while with a dumb loop we can instead use string buffer that is allocated once, and cleared after each loop.
+
 
 ```rust
 pub struct Ingester {
@@ -114,25 +120,29 @@ impl<R: Read> TryFrom<BufReader<R>> for Ingester {
 
 ```
 
-### RawFeature
+##### RawFeature
 
 The `RawFeature` struct contains 7 fields, including:
 - ID of the node
-- Parent feature (if set to `None`, then it is a root feature)
-- Program ID
-- Progress status (Complete or In Progress)
-- Assigned team generating the feature
-- Feature start time
-- Feature end time (note: this could be later than child features if the child features are asynchronous)
+- ParentFeature (if set to `None`, then it is a root feature)
+- ProgramID
+- ProgressStatus (Complete or In Progress)
+- AssignedTeam generating the feature
+- StartDate
+- endDate
 
-### Implementations
+##### Implementations
 There are implementations for the `TryFrom` and `FromStr` traits for the `RawFeature` struct.
 - The `TryFrom` implementation allows creating a `RawFeature` instance from a `String`
 - The `FromStr` implementation allows creating a `RawFeature` instance from a string slice (`&str`) and tries to turn a program log line into a feature by parsing the string slice into its component parts. If the string slice doesn't have the expected format or can't be parsed into a `RawFeature`, then it returns an error.
 
-### Method
-The struct also includes a method `is_root`, which returns a boolean indicating whether the `RawFeature` is a root feature or not.
+The `FromStr` implementation has a `from_str` method which takes a string `s` as input and returns a `Result` containing either an instance of the `RawFeature` type or an error.
 
+The input string `s` is first trimmed and split into a vector of string slices `parts` using the `split` method. If the resulting vector `parts` doesn't have 6 elements, the code returns an error indicating an invalid input string.
+
+Next, the code takes the last element of the `parts` vector and splits it into two parts using the `->` separator, resulting in a `feature_ids` vector. If the `feature_ids` vector doesn't have 2 elements, the code returns an error indicating an invalid input string.
+
+If all the checks have passed, the code creates an instance of the `RawFeature` type and returns it as the result of the function.
 
 ```rust
 
@@ -144,29 +154,29 @@ pub struct RawFeature {
     /// The parent feature
     ///
     /// If it is set to `None`, then this is a root feature
-    pub parent_id: Option<String>,
+    pub ParentID: Option<String>,
 
     /// Program ID
-    pub program_id: String,
+    pub ProgramID: String,
 
-    /// progress_status (Complete, In Progress)
-    pub progress_status: String,
+    /// ProgressStatus (Complete, In Progress)
+    pub ProgressStatus: String,
 
     /// The name of the assigned team generating the feature
-    pub assigned_team: String,
+    pub AssignedTeam: String,
 
     /// The Feature Start Time
-    pub start_time: chrono::DateTime<FixedOffset>,
+    pub StartDate: chrono::DateTime<FixedOffset>,
 
     /// Feature End Time
     ///
     /// **Note**: This could be later than child features if the child features are asynchronous.
-    pub end_time: chrono::DateTime<FixedOffset>,
+    pub EndDate: chrono::DateTime<FixedOffset>,
 }
 
 impl RawFeature {
     pub fn is_root(&self) -> bool {
-        self.parent_id.is_none()
+        self.ParentID.is_none()
     }
 }
 
@@ -183,13 +193,13 @@ impl FromStr for RawFeature {
 
     /// Try to turn a program log line into a feature
     ///
-    /// Example: `2016-10-20T12:43:34.000Z 2016-10-20T12:43:35.000Z program_1 back-end-3 ac->ad`
+    /// Example: `2016-10-20T12:43:34.000Z 2016-10-20T12:43:35.000Z program1 back-end-3 ac->ad`
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.trim().split(" ").collect();
         // We should have 6 parts.
         if parts.len() != 6 {
             return Err(ProgramIngesterError::InvalidProgramInput(format!(
-                "The feature '{s}' needs to have 6 parts, start, end, program, progress_status, assigned_team, feature-relation"
+                "The feature '{s}' needs to have 6 parts, start, end, program, ProgressStatus, AssignedTeam, feature-relation"
             )));
         }
 
@@ -205,26 +215,35 @@ impl FromStr for RawFeature {
 
         Ok(RawFeature {
             id: feature_ids.last().unwrap().to_owned().into(),
-            parent_id: match feature_ids.first().unwrap().to_owned() {
+            ParentID: match feature_ids.first().unwrap().to_owned() {
                 "null" => None,
                 id => Some(id.into()),
             },
-            start_time: DateTime::parse_from_rfc3339(parts.first().unwrap().to_owned())?,
-            end_time: DateTime::parse_from_rfc3339(parts.get(1).unwrap().to_owned())?,
-            program_id: parts.get(2).unwrap().to_owned().into(),
-            progress_status: parts.get(3).unwrap().to_owned().into(),
-            assigned_team: parts.get(4).unwrap().to_owned().into(),
+            StartDate: DateTime::parse_from_rfc3339(parts.first().unwrap().to_owned())?,
+            EndDate: DateTime::parse_from_rfc3339(parts.get(1).unwrap().to_owned())?,
+            ProgramID: parts.get(2).unwrap().to_owned().into(),
+            ProgressStatus: parts.get(3).unwrap().to_owned().into(),
+            AssignedTeam: parts.get(4).unwrap().to_owned().into(),
         })
     }
 }
 
 ```
 
-### FeatureDataAndChildren
+##### `FeatureDataAndChildren`
 
-The FeatureDataAndChildren struct holds two pieces of data:
+The `FeatureDataAndChildren` struct holds two pieces of data:
+
+> Backticks: `FeatureDataAndChildren`. can be done in the title too.
+> I don't think this needs to be such an important section, so it should be added as a child of another section, eg `####`.
+> I think this needs a bit more explanation as it is very nuanced. It's because the incoming project feature input lines are what reference the parent feature (if any), but when we're trying to invert the relationship from parent->this to this->children, we don't have all the data during the iteration but know that it _should_ come later.
 
 - feature_data: an Option of a reference to a RawFeature struct. This means that feature_data could either contain a reference to a RawFeature instance, or it could be None, indicating that there is no RawFeature instance associated with this struct.
+
+> - Remove lines in between list items (as mentioned)
+> - backticks for code, eg: `feature_data`
+> - Instead of saying _an Option of a reference to a RawFeature struct_, you could say _an Optional reference to a `RawFeature`_ and mention that it's an `Option` because it is only updated to `Some` when that data is found (which might be later than when the `RawFeature` is created).
+> - Worth noting that if it is still `None` at the end of building that vector, then there is missing data (and there should probably be a warning). That check doesn't yet exist in the code. It could be done using a `.filter` where it equals `None` and then a count. if `>0 `, then `tracing::warning`.
 
 - children: a Vec (vector) of FeatureID values. This is a list of child feature IDs that can be used to look up related information in the FeatureMap.
 
@@ -246,23 +265,23 @@ pub type FeatureID = String;
 pub type FeatureMap<'a> = HashMap<FeatureID, FeatureDataAndChildren<'a>>;
 ```
 
-## Errors
+#### Errors
 
-### ProgramIngesterError
+##### ProgramIngesterError
 
 This code defines an error enum for the ProgramIngester module, named `ProgramIngesterError`. The enum has three variants:
 
-#### InvalidProgramInput
+###### InvalidProgramInput
 This variant is used when the input to the program is not valid, and it carries a string message describing the error.
 
-#### InvalidTimestamp
+###### InvalidTimestamp
 This variant is used when the timestamp in the input cannot be parsed, and it carries an underlying error of type `chrono::ParseError`.
 
-#### IoError
+###### IoError
 This variant is used when an I/O operation fails, and it carries an underlying error of type `io::Error`.
 
-The `Error` trait and the `#[derive(Error, Debug)]` attribute are from the `thiserror` crate,
-and they allow for convenient error handling and formatting of error messages.
+The `Error` trait and the `#[derive(Error, Debug)]` attribute are from the `thiserror` crate. `thiserror` allows to handle custom errors as well as wrapping errors produced by other crates (to make using `?` possible).
+
 
 ```rust
 use std::io;
@@ -288,13 +307,13 @@ pub enum ProgramIngesterError {
 }
 ```
 
-## Outputs
-### Feature and Serialization
+#### Outputs
+##### Feature and Serialization
 
 The `Feature` struct represents a feature in a software development project. It has the following fields:
 - `id`: a string identifier for the feature
-- `progress_status`: a string indicating the progress status of the feature
-- `assigned_team`: a string indicating the team responsible for the feature
+- `ProgressStatus`: a string indicating the progress status of the feature
+- `AssignedTeam`: a string indicating the team responsible for the feature
 - `start`: a `chrono::DateTime<FixedOffset>` indicating the start date of the feature
 - `end`: a `chrono::DateTime<FixedOffset>` indicating the end date of the feature
 - `subfeatures`: a vector of `Feature` objects, representing subfeatures of the current feature
@@ -309,8 +328,8 @@ The line `#[serde(rename = "feature")]` uses Serde's "serde" attribute to specif
 pub struct Feature {
     #[serde(rename = "feature")]
     pub id: String,
-    pub progress_status: String,
-    pub assigned_team: String,
+    pub ProgressStatus: String,
+    pub AssignedTeam: String,
     pub start: chrono::DateTime<FixedOffset>,
     pub end: chrono::DateTime<FixedOffset>,
     #[serde(serialize_with = "odered_features")]
@@ -318,7 +337,7 @@ pub struct Feature {
 }
 ```
 
-#### Custom Serializer
+###### Custom Serializer
 
 The custom serializer `odered_features` is defined as follows:
 
@@ -338,7 +357,7 @@ where
 The function takes in a slice of `Feature` objects, `value`, and a Serde serializer, `serializer`. The function sorts the input slice of `Feature` objects by the `start` field and then serializes the sorted slice using the provided `serializer`. The function returns a `Result` type that represents the outcome of the serialization process. If the serialization is successful, the result will contain the serialized value of type `S::Ok`. If an error occurs during serialization, the result will contain an error value of type `S::Error`. The function uses the `where` clause to specify that the type of the `serializer` must implement the `Serializer` trait. This allows the function to be used with any serializer that implements this trait, making it more flexible and reusable. The method `to_owned()` is a method that creates a new owned value (a deep copy) from a borrowed value, such as a reference. In this case, the method is used to convert the input slice of `Feature` objects, `value`, into an owned vector of `Feature` objects. This is necessary because the sorting operation needs to modify the contents of the vector, and a reference to the original slice cannot be modified. By creating an owned copy, the original data remains unchanged, and the sort operation can be performed on the copy.
 
 
-### Program
+##### Program
 This struct has two fields: `id` of type String and `root` of type `Feature`.
 
 
@@ -358,7 +377,7 @@ pub struct Program {
 }
 ```
 
-### ProgramGraph
+##### ProgramGraph
 
 This struct has one field: programs of type `Vec<Program>`.
 
@@ -380,7 +399,7 @@ pub struct ProgramGraph {
 
 ```
 
-#### Serialization with `odered_programs`
+###### Serialization with `odered_programs`
 
 The `#[serde(serialize_with = "odered_programs")]` line is a Serde attribute that specifies the custom serialization function for the programs field. The odered_programs function sorts the programs by their root.start value before serializing them.
 
@@ -397,7 +416,7 @@ where
 
 ```
 
-#### Partial Equality with `PartialEq` Implementation
+###### Partial Equality with `PartialEq` Implementation
 
 The `PartialEq` implementation for `ProgramGraph` sorts the programs field by their root.start value before checking for equality.
 
@@ -415,15 +434,15 @@ impl PartialEq for ProgramGraph {
 }
 ```
 
-#### Transformation from `RawFeature` to `ProgramGraph`
+###### Transformation from `RawFeature` to `ProgramGraph`
 
-The code is transforming a vector of RawFeature objects into a ProgramGraph object. The transformation starts by building a mapping of parent to children feature IDs, which is done by upserting each feature and its parent. If the feature or its parent already exists in the mapping, it is updated, otherwise it is inserted with the given information.
+The code is transforming a vector of `RawFeature` objects into a `ProgramGraph` object. The transformation starts by building a mapping of parent to children feature IDs, which is done by upserting each feature and its parent. If the feature or its parent already exists in the mapping, it is updated, otherwise it is inserted with the given information.
 
 Once the mapping is built, the code filters out the root features, which are the features that don't have a parent. For each root feature, the code creates a Program object by resolving its subfeatures and then pushes it into the ProgramGraph object.
 
-The code uses a helper function, resolve_subfeatures, to resolve the subfeatures of a feature. It takes a list of child feature IDs and the mapping and returns a list of Feature objects by filtering the mapping and transforming the filtered values into Feature objects.
+The code uses a helper function, `resolve_subfeatures`, to resolve the subfeatures of a feature. It takes a list of child feature IDs and the mapping and returns a list of Feature objects by filtering the mapping and transforming the filtered values into `Feature` objects.
 
-The impl From block is an implementation of the From trait, which allows a type conversion from Vec<RawFeature> to ProgramGraph. The implementation makes use of the helper function resolve_subfeatures to resolve the subfeatures of each feature in the vector of RawFeature objects and construct the ProgramGraph object.
+The impl `From` block is an implementation of the `From` trait, which allows a type conversion from `Vec<RawFeature>` to `ProgramGraph`. The implementation makes use of the helper function `resolve_subfeatures` to resolve the subfeatures of each feature in the vector of `RawFeature` objects and construct the `ProgramGraph` object.
 
 ```rust
 /// Transform a vector of [`RawFeature`] into a [`ProgramGraph`]
@@ -450,10 +469,10 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                     tracing::debug!(feature_id, "...");
                     value.feature_data.map(|feature_data| Feature {
                         id: feature_data.id.clone(),
-                        start: feature_data.start_time,
-                        end: feature_data.end_time,
-                        assigned_team: feature_data.assigned_team.clone(),
-                        progress_status: feature_data.progress_status.clone(),
+                        start: feature_data.StartDate,
+                        end: feature_data.EndDate,
+                        AssignedTeam: feature_data.AssignedTeam.clone(),
+                        ProgressStatus: feature_data.ProgressStatus.clone(),
                         subfeatures: resolve_subfeatures(value.children.clone(), mappings),
                     })
                 })
@@ -485,12 +504,12 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                 }
             };
 
-            if let Some(parent_id) = feature.parent_id.clone() {
-                match mappings.get_mut(&parent_id) {
+            if let Some(ParentID) = feature.ParentID.clone() {
+                match mappings.get_mut(&ParentID) {
                     Some(mapping) => mapping.children.push(feature.id.to_owned()),
                     None => {
                         mappings.insert(
-                            parent_id,
+                            ParentID,
                             FeatureDataAndChildren {
                                 feature_data: None,
                                 children: vec![feature.id.to_owned()],
@@ -519,13 +538,13 @@ impl From<Vec<RawFeature>> for ProgramGraph {
         for root in roots {
             if let Some(feature_data) = root.feature_data {
                 let program = Program {
-                    id: feature_data.program_id.clone(),
+                    id: feature_data.ProgramID.clone(),
                     root: Feature {
                         id: feature_data.id.clone(),
-                        start: feature_data.start_time,
-                        end: feature_data.end_time,
-                        assigned_team: feature_data.assigned_team.clone(),
-                        progress_status: feature_data.progress_status.clone(),
+                        start: feature_data.StartDate,
+                        end: feature_data.EndDate,
+                        AssignedTeam: feature_data.AssignedTeam.clone(),
+                        ProgressStatus: feature_data.ProgressStatus.clone(),
                         subfeatures: resolve_subfeatures(root.children.clone(), &mappings),
                     },
                 };
@@ -542,7 +561,7 @@ impl From<Vec<RawFeature>> for ProgramGraph {
 
 ```
 
-## CLI
+### CLI
 
 The command line interface (CLI) tool ingests data, builds a graph and outputs it to the terminal. The following are the high-level steps:
 
@@ -615,18 +634,13 @@ fn main() -> anyhow::Result<()> {
 
 ```
 
-# Workspace members
-
-- [cli](./cli/) - end application
-- [program_ingester](./program_ingester/) - library (that can be used in applications like CLI, Web Server, etc...)
-
-# Test
+## Test
 
 ```sh
 cargo test
 ```
 
-# Run examples
+## Run examples
 
 > **Note**: I've used examples to test small bits of code for building the library. Usually I use examples for showing how to use the library in various ways.
 
@@ -634,10 +648,10 @@ cargo test
 cargo run --example simple_tree
 ```
 
-# Generate docs:
+## Generate docs:
 
 > **Note**: Rust docs are awesome. Cargo can compile example code in comments to make sure they are correct.
 
 ```sh
-cargo doc --no-deps --lib --document-private-items # add --open to open in a new browser tab
+cargo doc --no-deps --lib --document-private-items ## add --open to open in a new browser tab
 ```
