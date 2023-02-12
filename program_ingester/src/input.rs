@@ -1,6 +1,4 @@
 /// A crate for defining the input structs and implement their traits
-
-
 use std::{
     collections::HashMap,
     io::{BufRead, BufReader, Read},
@@ -51,7 +49,6 @@ impl<R: Read> TryFrom<BufReader<R>> for Ingester {
     }
 }
 
-
 /// RawFeature represents a struct that contains 7 fields.
 /// There are implementations for the TryFrom and FromStr traits for the RawFeature struct.
 /// The TryFrom implementation allows creating a RawFeature instance from a String,
@@ -68,7 +65,7 @@ pub struct RawFeature {
     /// The parent feature
     ///
     /// If it is set to `None`, then this is a root feature
-    pub ParentID: Option<String>,
+    pub parent_id: Option<String>,
 
     /// Program ID
     pub program_id: String,
@@ -89,7 +86,7 @@ pub struct RawFeature {
 
 impl RawFeature {
     pub fn is_root(&self) -> bool {
-        self.ParentID.is_none()
+        self.parent_id.is_none()
     }
 }
 
@@ -123,12 +120,14 @@ impl FromStr for RawFeature {
         let feature_ids: Vec<&str> = last_part.split("->").collect();
 
         if feature_ids.len() != 2 {
-            return Err(ProgramIngesterError::InvalidProgramInput(format!("The feature-relation '{s}' needs to have 2 parts")));
+            return Err(ProgramIngesterError::InvalidProgramInput(format!(
+                "The feature-relation '{s}' needs to have 2 parts"
+            )));
         }
 
         Ok(RawFeature {
             id: feature_ids.last().unwrap().to_owned().into(),
-            ParentID: match feature_ids.first().unwrap().to_owned() {
+            parent_id: match feature_ids.first().unwrap().to_owned() {
                 "null" => None,
                 id => Some(id.into()),
             },
@@ -140,7 +139,6 @@ impl FromStr for RawFeature {
         })
     }
 }
-
 
 /// The FeatureDataAndChildren struct is a struct that holds two pieces of data:
 /// feature_data, which is an Option of a reference to a RawFeature struct.
@@ -181,7 +179,7 @@ mod test {
 
         let expected = RawFeature {
             id: "Email".into(),
-            ParentID: Some("ProductivitySuite".into()),
+            parent_id: Some("ProductivitySuite".into()),
             program_id: "program1".into(),
             progress_status: "Complete".into(),
             assigned_team: "TeamB".into(),

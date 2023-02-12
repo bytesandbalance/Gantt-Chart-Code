@@ -182,12 +182,12 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                 }
             };
 
-            if let Some(ParentID) = feature.ParentID.clone() {
-                match mappings.get_mut(&ParentID) {
+            if let Some(parent_id) = feature.parent_id.clone() {
+                match mappings.get_mut(&parent_id) {
                     Some(mapping) => mapping.children.push(feature.id.to_owned()),
                     None => {
                         mappings.insert(
-                            ParentID,
+                            parent_id,
                             FeatureDataAndChildren {
                                 feature_data: None,
                                 children: vec![feature.id.to_owned()],
@@ -248,7 +248,7 @@ mod test {
         let input: Vec<RawFeature> = vec![
             RawFeature {
                 id: "a".into(),
-                ParentID: None,
+                parent_id: None,
                 program_id: "t1".into(),
                 assigned_team: "s1".into(),
                 progress_status: "s1".into(),
@@ -259,7 +259,7 @@ mod test {
             },
             RawFeature {
                 id: "b".into(),
-                ParentID: Some("a".into()),
+                parent_id: Some("a".into()),
                 program_id: "t1".into(),
                 assigned_team: "s1".into(),
                 progress_status: "s2".into(),
