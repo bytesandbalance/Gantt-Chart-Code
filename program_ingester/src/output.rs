@@ -19,8 +19,8 @@ pub struct Feature {
     pub id: String,
     pub progress_status: String,
     pub assigned_team: String,
-    pub start: chrono::DateTime<FixedOffset>,
-    pub end: chrono::DateTime<FixedOffset>,
+    pub start_date: chrono::DateTime<FixedOffset>,
+    pub end_date: chrono::DateTime<FixedOffset>,
     #[serde(serialize_with = "odered_features")]
     pub subfeatures: Vec<Feature>,
 }
@@ -28,7 +28,7 @@ pub struct Feature {
 
 /// The given code defines a function named "odered_features", which is a custom serializer for instances of the Feature struct.
 /// The function takes in a slice of Feature objects, "value", and a Serde serializer, "serializer".
-/// The function sorts the input slice of Feature objects by the "start" field and then serializes the sorted slice using the provided serializer.
+/// The function sorts the input slice of Feature objects by the "start_date" field and then serializes the sorted slice using the provided serializer.
 /// The function returns a Result type that represents the outcome of the serialization process.
 /// If the serialization is successful, the result will contain the serialized value of type S::Ok.
 /// If an error occurs during serialization, the result will contain an error value of type S::Error.
@@ -45,7 +45,7 @@ where
     S: Serializer,
 {
     let mut value = value.to_owned();
-    value.sort_by_key(|feature| feature.start);
+    value.sort_by_key(|feature| feature.start_date);
 
     value.serialize(serializer)
 }
@@ -53,17 +53,17 @@ where
 /// Implement PartialEq so that we can compare [Feature]s in an ordered way.
 impl PartialEq for Feature {
     fn eq(&self, other: &Self) -> bool {
-        // sort the subfeatures by start date before equality check
+        // sort the subfeatures by start_date date before equality check
         let mut these_subfeatures = self.subfeatures.clone();
-        these_subfeatures.sort_by_key(|feature| feature.start);
+        these_subfeatures.sort_by_key(|feature| feature.start_date);
         let mut those_subfeatures = other.subfeatures.clone();
-        those_subfeatures.sort_by_key(|feature| feature.start);
+        those_subfeatures.sort_by_key(|feature| feature.start_date);
 
         self.id == other.id
             && self.progress_status == other.progress_status
             && self.assigned_team == other.assigned_team
-            && self.start == other.start
-            && self.end == other.end
+            && self.start_date == other.start_date
+            && self.end_date == other.end_date
             && these_subfeatures == those_subfeatures
     }
 }
@@ -87,7 +87,7 @@ where
     S: Serializer,
 {
     let mut value = value.to_owned();
-    value.sort_by_key(|program| program.root.start);
+    value.sort_by_key(|program| program.root.start_date);
 
     value.serialize(serializer)
 }
@@ -95,11 +95,11 @@ where
 /// Implement PartialEq so that we can compare [Program]s in an ordered way.
 impl PartialEq for ProgramGraph {
     fn eq(&self, other: &Self) -> bool {
-        // sort the programs by root start date before equality check
+        // sort the programs by root start_date date before equality check
         let mut these_programs = self.programs.clone();
-        these_programs.sort_by_key(|program| program.root.start);
+        these_programs.sort_by_key(|program| program.root.start_date);
         let mut those_programs = other.programs.clone();
-        those_programs.sort_by_key(|program| program.root.start);
+        those_programs.sort_by_key(|program| program.root.start_date);
 
         these_programs == those_programs
     }
@@ -147,8 +147,8 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                     tracing::debug!(feature_id, "...");
                     value.feature_data.map(|feature_data| Feature {
                         id: feature_data.id.clone(),
-                        start: feature_data.start_time,
-                        end: feature_data.end_time,
+                        start_date: feature_data.start_date,
+                        end_date: feature_data.end_date,
                         assigned_team: feature_data.assigned_team.clone(),
                         progress_status: feature_data.progress_status.clone(),
                         subfeatures: resolve_subfeatures(value.children.clone(), mappings),
@@ -167,7 +167,7 @@ impl From<Vec<RawFeature>> for ProgramGraph {
             // 2. Upsert the parent feature in the mappings
             //    - If it exists already (created by #1, or by another child feature in #2): Only push this id as a child.
             //    - If it doesn't exist: Insert a new entry with the feature_data set to None and the children as a Vec with one entry (this feature id)
-            // By the end, there should be no feature_data values set to None
+            // By the end_date, there should be no feature_data values set to None
 
             match mappings.get_mut(&feature.id) {
                 Some(mapping) => mapping.feature_data = Some(feature),
@@ -182,12 +182,12 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                 }
             };
 
-            if let Some(parent_id) = feature.parent_id.clone() {
-                match mappings.get_mut(&parent_id) {
+            if let Some(ParentID) = feature.ParentID.clone() {
+                match mappings.get_mut(&ParentID) {
                     Some(mapping) => mapping.children.push(feature.id.to_owned()),
                     None => {
                         mappings.insert(
-                            parent_id,
+                            ParentID,
                             FeatureDataAndChildren {
                                 feature_data: None,
                                 children: vec![feature.id.to_owned()],
@@ -219,8 +219,8 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                     id: feature_data.program_id.clone(),
                     root: Feature {
                         id: feature_data.id.clone(),
-                        start: feature_data.start_time,
-                        end: feature_data.end_time,
+                        start_date: feature_data.start_date,
+                        end_date: feature_data.end_date,
                         assigned_team: feature_data.assigned_team.clone(),
                         progress_status: feature_data.progress_status.clone(),
                         subfeatures: resolve_subfeatures(root.children.clone(), &mappings),
@@ -248,24 +248,24 @@ mod test {
         let input: Vec<RawFeature> = vec![
             RawFeature {
                 id: "a".into(),
-                parent_id: None,
+                ParentID: None,
                 program_id: "t1".into(),
                 assigned_team: "s1".into(),
                 progress_status: "s1".into(),
-                start_time: DateTime::parse_from_rfc3339("2023-10-01T00:00:00.000Z")
+                start_date: DateTime::parse_from_rfc3339("2023-10-01T00:00:00.000Z")
                     .expect("test dates should be checked"),
-                end_time: DateTime::parse_from_rfc3339("2023-11-30T00:00:00.000Z")
+                end_date: DateTime::parse_from_rfc3339("2023-11-30T00:00:00.000Z")
                     .expect("test dates should be checked"),
             },
             RawFeature {
                 id: "b".into(),
-                parent_id: Some("a".into()),
+                ParentID: Some("a".into()),
                 program_id: "t1".into(),
                 assigned_team: "s1".into(),
                 progress_status: "s2".into(),
-                start_time: DateTime::parse_from_rfc3339("2023-10-20T00:00:00.000Z")
+                start_date: DateTime::parse_from_rfc3339("2023-10-20T00:00:00.000Z")
                     .expect("test dates should be checked"),
-                end_time: DateTime::parse_from_rfc3339("2023-11-20T00:00:00.000Z")
+                end_date: DateTime::parse_from_rfc3339("2023-11-20T00:00:00.000Z")
                     .expect("test dates should be checked"),
             },
         ];
@@ -277,17 +277,17 @@ mod test {
                     id: "a".into(),
                     progress_status: "s1".into(),
                     assigned_team: "s1".into(),
-                    start: DateTime::parse_from_rfc3339("2023-10-01T00:00:00.000Z")
+                    start_date: DateTime::parse_from_rfc3339("2023-10-01T00:00:00.000Z")
                         .expect("test dates should be checked"),
-                    end: DateTime::parse_from_rfc3339("2023-11-30T00:00:00.000Z")
+                    end_date: DateTime::parse_from_rfc3339("2023-11-30T00:00:00.000Z")
                         .expect("test dates should be checked"),
                     subfeatures: vec![Feature {
                         id: "b".into(),
                         progress_status: "s2".into(),
                         assigned_team: "s1".into(),
-                        start: DateTime::parse_from_rfc3339("2023-10-20T00:00:00.000Z")
+                        start_date: DateTime::parse_from_rfc3339("2023-10-20T00:00:00.000Z")
                             .expect("test dates should be checked"),
-                        end: DateTime::parse_from_rfc3339("2023-11-20T00:00:00.000Z")
+                        end_date: DateTime::parse_from_rfc3339("2023-11-20T00:00:00.000Z")
                             .expect("test dates should be checked"),
                         subfeatures: vec![],
                     }],

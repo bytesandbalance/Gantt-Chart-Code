@@ -9,7 +9,7 @@ pub struct RawFeature {
     id: u8,
 
     /// If None, then it's a root
-    parent_id: Option<u8>,
+    ParentID: Option<u8>,
 
     /// program id
     program_id: u8,
@@ -18,7 +18,7 @@ pub struct RawFeature {
 
 impl RawFeature {
     fn is_root(&self) -> bool {
-        self.parent_id.is_none()
+        self.ParentID.is_none()
     }
 }
 
@@ -67,22 +67,22 @@ fn main() {
     let sequence = vec![
         &RawFeature {
             id: 3,
-            parent_id: Some(2),
+            ParentID: Some(2),
             program_id: 1,
         },
         &RawFeature {
             id: 1,
-            parent_id: None,
+            ParentID: None,
             program_id: 1,
         },
         &RawFeature {
             id: 2,
-            parent_id: Some(1),
+            ParentID: Some(1),
             program_id: 1,
         },
         &RawFeature {
             id: 4,
-            parent_id: Some(1),
+            ParentID: Some(1),
             program_id: 1,
         },
     ];
@@ -117,12 +117,12 @@ fn main() {
             }
         }
 
-        if let Some(parent_id) = feature.parent_id {
-            match mappings.get_mut(&parent_id) {
+        if let Some(ParentID) = feature.ParentID {
+            match mappings.get_mut(&ParentID) {
                 Some(mapping) => mapping.children.push(feature.id),
                 None => {
                     mappings.insert(
-                        parent_id,
+                        ParentID,
                         FeatureDataAndChildren {
                             feature_data: None,
                             children: vec![feature.id],

@@ -68,7 +68,7 @@ pub struct RawFeature {
     /// The parent feature
     ///
     /// If it is set to `None`, then this is a root feature
-    pub parent_id: Option<String>,
+    pub ParentID: Option<String>,
 
     /// Program ID
     pub program_id: String,
@@ -80,17 +80,16 @@ pub struct RawFeature {
     pub assigned_team: String,
 
     /// The Feature Start Time
-    pub start_time: chrono::DateTime<FixedOffset>,
+    pub start_date: chrono::DateTime<FixedOffset>,
 
     /// Feature End Time
     ///
-    /// **Note**: This could be later than child features if the child features are asynchronous.
-    pub end_time: chrono::DateTime<FixedOffset>,
+    pub end_date: chrono::DateTime<FixedOffset>,
 }
 
 impl RawFeature {
     pub fn is_root(&self) -> bool {
-        self.parent_id.is_none()
+        self.ParentID.is_none()
     }
 }
 
@@ -107,7 +106,7 @@ impl FromStr for RawFeature {
 
     /// Try to turn a program log line into a feature
     ///
-    /// Example: `2016-10-20T12:43:34.000Z 2016-10-20T12:43:35.000Z program_1 back-end-3 ac->ad`
+    /// Example: `2016-10-20T12:43:34.000Z 2016-10-20T12:43:35.000Z program1 back-end-3 ac->ad`
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let parts: Vec<&str> = s.trim().split(" ").collect();
         // We should have 6 parts.
@@ -129,12 +128,12 @@ impl FromStr for RawFeature {
 
         Ok(RawFeature {
             id: feature_ids.last().unwrap().to_owned().into(),
-            parent_id: match feature_ids.first().unwrap().to_owned() {
+            ParentID: match feature_ids.first().unwrap().to_owned() {
                 "null" => None,
                 id => Some(id.into()),
             },
-            start_time: DateTime::parse_from_rfc3339(parts.first().unwrap().to_owned())?,
-            end_time: DateTime::parse_from_rfc3339(parts.get(1).unwrap().to_owned())?,
+            start_date: DateTime::parse_from_rfc3339(parts.first().unwrap().to_owned())?,
+            end_date: DateTime::parse_from_rfc3339(parts.get(1).unwrap().to_owned())?,
             program_id: parts.get(2).unwrap().to_owned().into(),
             progress_status: parts.get(3).unwrap().to_owned().into(),
             assigned_team: parts.get(4).unwrap().to_owned().into(),
@@ -178,17 +177,17 @@ mod test {
 
     #[test]
     fn test_parsing_single_program() {
-        let input = "2023-01-01T00:00:00.000Z 2023-06-30T00:00:00.000Z program_1 Complete Team_B Productivity_Suite->Email";
+        let input = "2023-01-01T00:00:00.000Z 2023-06-30T00:00:00.000Z program1 Complete TeamB ProductivitySuite->Email";
 
         let expected = RawFeature {
             id: "Email".into(),
-            parent_id: Some("Productivity_Suite".into()),
-            program_id: "program_1".into(),
+            ParentID: Some("ProductivitySuite".into()),
+            program_id: "program1".into(),
             progress_status: "Complete".into(),
-            assigned_team: "Team_B".into(),
-            start_time: DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z")
+            assigned_team: "TeamB".into(),
+            start_date: DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z")
                 .expect("test dates should be checked"),
-            end_time: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
+            end_date: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
                 .expect("test dates should be checked"),
         };
 

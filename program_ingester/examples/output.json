@@ -1,7 +1,7 @@
 {
-    "id": "program_1",
+    "id": "program1",
     "root": {
-        "feature": "Productivity_Suite",
+        "feature": "ProductivitySuite",
         "start": "2023-01-01T00:00:00.000Z",
         "end": "2023-12-31T00:00:00.000Z",
         "subfeatures": [
@@ -11,25 +11,25 @@
                 "end": "2023-06-30T00:00:00.000Z",
                 "subfeatures": [
                     {
-                        "feature": "Email_Search",
+                        "feature": "EmailSearch",
                         "start": "2023-01-01T00:00:00.000Z",
                         "end": "2023-04-30T00:00:00.000Z",
                         "subfeatures": [],
                         "progress_status": "Complete",
-                        "assigned_team": "Team_B"
+                        "assigned_team": "TeamB"
                     },
                     {
-                        "feature": "Email_Filters",
+                        "feature": "EmailFilters",
                         "start": "2023-05-01T00:00:00.000Z",
                         "end": "2023-06-301T00:00:00.000Z",
                         "subfeatures": [],
                         "progress_status": "Complete",
-                        "assigned_team": "Team_B"
+                        "assigned_team": "TeamB"
                     }
                 ]
             }
         ],
         "progress_status": "Complete",
-        "assigned_team": "Team_A"
+        "assigned_team": "TeamA"
     }
 }

@@ -1,3 +1,6 @@
+> **Warning**: Fix the cargo warnings (eg: not snake_case variables), rename `program_ingester` to `programme_ingester`. Also, your blog directory is called `contrived-gannt` when it should be your entire blog (not just the name of a post) and should be in it's own repository.
+> Your integration tests are empty. Either delete them or make them work.
+
 # Serilized Gantt Chart
 
 A Gantt chart is a type of bar chart that illustrates a project schedule, named after Henry Gantt who invented this chart in the early 1900s. It is used to represent the timeline of a project or multiple projects, and displays the tasks or activities involved, their duration, and the dependencies between them. In software development, it is often used to track the progress of building features for a product, with each task or activity representing a step in the development process. The horizontal axis of a Gantt chart represents time, and the vertical axis represents tasks or activities. The chart helps project managers and teams to visualize the work that needs to be done, estimate the time it will take, and track progress towards completion.
@@ -7,13 +10,13 @@ Our program aims to convert the components of a Gannt diagram into a JSON repres
 
 ### Introduction
 
-I will discuss a problem of representing a set of features and their children in a structured manner. The features are defined by start and end dates, program ID, progress status, assigned team, and parent feature/module. The goal is to convert this information into a JSON representation.
+I will discuss a problem of representing a set of features and their children in a structured manner. The goal is to convert this information into a JSON representation.
 
 Problem Statement:
 
 Given a set of features defined by the following lines:
 
-_[StartDate] [EndDate] [ProgramID] [ProgressStatus] [AssignedTeam] [Parent Feature]->[Module]_
+_[start_date] [end_date] [program_id] [progress_status] [assigned_team] [parent_feature]->[feature]_
 
 ```txt
 2023-01-01 2023-12-31 program1 InProgress TeamA null->ProductivitySuite
@@ -45,22 +48,22 @@ The input data will be stored in a text file, and the solution should be able to
                         "start": "2023-01-01T00:00:00.000Z",
                         "end": "2023-04-30T00:00:00.000Z",
                         "subfeatures": [],
-                        "ProgressStatus": "Complete",
-                        "AssignedTeam": "TeamB"
+                        "progress_status": "Complete",
+                        "assigned_team": "TeamB"
                     },
                     {
                         "feature": "EmailFilters",
                         "start": "2023-05-01T00:00:00.000Z",
                         "end": "2023-06-301T00:00:00.000Z",
                         "subfeatures": [],
-                        "ProgressStatus": "Complete",
-                        "AssignedTeam": "TeamB"
+                        "progress_status": "Complete",
+                        "assigned_team": "TeamB"
                     }
                 ]
             }
         ],
-        "ProgressStatus": "Complete",
-        "AssignedTeam": "TeamA"
+        "progress_status": "Complete",
+        "assigned_team": "TeamA"
     }
 }
 ```
@@ -124,11 +127,11 @@ impl<R: Read> TryFrom<BufReader<R>> for Ingester {
 
 The `RawFeature` struct contains 7 fields, including:
 - ID of the node
-- ParentFeature (if set to `None`, then it is a root feature)
-- ProgramID
-- ProgressStatus (Complete or In Progress)
-- AssignedTeam generating the feature
-- StartDate
+- parent_feature (if set to `None`, then it is a root feature)
+- program_id
+- progress_status (Complete or In Progress)
+- assigned_team generating the feature
+- start_date
 - endDate
 
 ##### Implementations
@@ -157,21 +160,21 @@ pub struct RawFeature {
     pub ParentID: Option<String>,
 
     /// Program ID
-    pub ProgramID: String,
+    pub program_id: String,
 
-    /// ProgressStatus (Complete, In Progress)
-    pub ProgressStatus: String,
+    /// progress_status (Complete, In Progress)
+    pub progress_status: String,
 
     /// The name of the assigned team generating the feature
-    pub AssignedTeam: String,
+    pub assigned_team: String,
 
     /// The Feature Start Time
-    pub StartDate: chrono::DateTime<FixedOffset>,
+    pub start_date: chrono::DateTime<FixedOffset>,
 
     /// Feature End Time
     ///
     /// **Note**: This could be later than child features if the child features are asynchronous.
-    pub EndDate: chrono::DateTime<FixedOffset>,
+    pub end_date: chrono::DateTime<FixedOffset>,
 }
 
 impl RawFeature {
@@ -199,7 +202,7 @@ impl FromStr for RawFeature {
         // We should have 6 parts.
         if parts.len() != 6 {
             return Err(ProgramIngesterError::InvalidProgramInput(format!(
-                "The feature '{s}' needs to have 6 parts, start, end, program, ProgressStatus, AssignedTeam, feature-relation"
+                "The feature '{s}' needs to have 6 parts, start, end, program, progress_status, assigned_team, feature-relation"
             )));
         }
 
@@ -219,11 +222,11 @@ impl FromStr for RawFeature {
                 "null" => None,
                 id => Some(id.into()),
             },
-            StartDate: DateTime::parse_from_rfc3339(parts.first().unwrap().to_owned())?,
-            EndDate: DateTime::parse_from_rfc3339(parts.get(1).unwrap().to_owned())?,
-            ProgramID: parts.get(2).unwrap().to_owned().into(),
-            ProgressStatus: parts.get(3).unwrap().to_owned().into(),
-            AssignedTeam: parts.get(4).unwrap().to_owned().into(),
+            start_date: DateTime::parse_from_rfc3339(parts.first().unwrap().to_owned())?,
+            end_date: DateTime::parse_from_rfc3339(parts.get(1).unwrap().to_owned())?,
+            program_id: parts.get(2).unwrap().to_owned().into(),
+            progress_status: parts.get(3).unwrap().to_owned().into(),
+            assigned_team: parts.get(4).unwrap().to_owned().into(),
         })
     }
 }
@@ -234,20 +237,11 @@ impl FromStr for RawFeature {
 
 The `FeatureDataAndChildren` struct holds two pieces of data:
 
-> Backticks: `FeatureDataAndChildren`. can be done in the title too.
-> I don't think this needs to be such an important section, so it should be added as a child of another section, eg `####`.
-> I think this needs a bit more explanation as it is very nuanced. It's because the incoming project feature input lines are what reference the parent feature (if any), but when we're trying to invert the relationship from parent->this to this->children, we don't have all the data during the iteration but know that it _should_ come later.
+- `feature_data`: an `Option` of a reference to a `RawFeature` struct. It's an `Option` because it is only updated to `Some` when that data is found (which might be later than when the `RawFeature` is created). This means that `feature_data` could either contain a reference to a `RawFeature` instance, or it could be `None`, indicating that there is no `RawFeature` instance associated with this struct.
 
-- feature_data: an Option of a reference to a RawFeature struct. This means that feature_data could either contain a reference to a RawFeature instance, or it could be None, indicating that there is no RawFeature instance associated with this struct.
+- `children`: a Vec (vector) of `FeatureID` values. This is a list of child feature IDs that can be used to look up related information in the `FeatureMap`.
 
-> - Remove lines in between list items (as mentioned)
-> - backticks for code, eg: `feature_data`
-> - Instead of saying _an Option of a reference to a RawFeature struct_, you could say _an Optional reference to a `RawFeature`_ and mention that it's an `Option` because it is only updated to `Some` when that data is found (which might be later than when the `RawFeature` is created).
-> - Worth noting that if it is still `None` at the end of building that vector, then there is missing data (and there should probably be a warning). That check doesn't yet exist in the code. It could be done using a `.filter` where it equals `None` and then a count. if `>0 `, then `tracing::warning`.
-
-- children: a Vec (vector) of FeatureID values. This is a list of child feature IDs that can be used to look up related information in the FeatureMap.
-
-FeatureMap is a type alias for a HashMap (hash map) data structure. A HashMap is a collection of key-value pairs, where the keys are of type FeatureID (which is defined as a type alias for String) and the values are of type FeatureDataAndChildren. This type alias makes it more expressive and easier to use, as the type FeatureMap is more meaningful and understandable than the underlying type HashMap.
+`FeatureMap` is a type alias for a HashMap (hash map) data structure. A HashMap is a collection of key-value pairs, where the keys are of type `FeatureID` (which is defined as a type alias for String) and the values are of type `FeatureDataAndChildren`. This type alias makes it more expressive and easier to use, as the type `FeatureMap` is more meaningful and understandable than the underlying type HashMap.
 
 'a is a lifetime annotation. In Rust, lifetimes are a way of expressing the relationship between references. They ensure that references are used in a safe and correct way by preventing references from pointing to data that has been dropped.
 
@@ -312,11 +306,11 @@ pub enum ProgramIngesterError {
 
 The `Feature` struct represents a feature in a software development project. It has the following fields:
 - `id`: a string identifier for the feature
-- `ProgressStatus`: a string indicating the progress status of the feature
-- `AssignedTeam`: a string indicating the team responsible for the feature
-- `start`: a `chrono::DateTime<FixedOffset>` indicating the start date of the feature
-- `end`: a `chrono::DateTime<FixedOffset>` indicating the end date of the feature
-- `subfeatures`: a vector of `Feature` objects, representing subfeatures of the current feature
+- `progress_status`: a string indicating the progress status of the feature
+- `assigned_team`: a string indicating the team responsible for the feature
+- `start_date`: a `chrono::DateTime<FixedOffset>` indicating the start date of the feature
+- `end_date`: a `chrono::DateTime<FixedOffset>` indicating the end date of the feature
+- `SubFeatures`: a vector of `Feature` objects, representing subfeatures of the current feature
 
 The struct is decorated with `#[derive(Debug, Serialize, Clone)]`, which uses Rust's "derive" macro to automatically generate implementations for the `Debug`, `Serialize`, and `Clone` traits. This means that instances of `Feature` can be debugged, serialized (converted to a format like JSON or BSON), and cloned (duplicated).
 
@@ -328,10 +322,10 @@ The line `#[serde(rename = "feature")]` uses Serde's "serde" attribute to specif
 pub struct Feature {
     #[serde(rename = "feature")]
     pub id: String,
-    pub ProgressStatus: String,
-    pub AssignedTeam: String,
-    pub start: chrono::DateTime<FixedOffset>,
-    pub end: chrono::DateTime<FixedOffset>,
+    pub progress_status: String,
+    pub assigned_team: String,
+    pub start_date: chrono::DateTime<FixedOffset>,
+    pub end_date: chrono::DateTime<FixedOffset>,
     #[serde(serialize_with = "odered_features")]
     pub subfeatures: Vec<Feature>,
 }
@@ -347,7 +341,7 @@ where
     S: Serializer,
 {
     let mut value = value.to_owned();
-    value.sort_by_key(|feature| feature.start);
+    value.sort_by_key(|feature| feature.start_date);
 
     value.serialize(serializer)
 }
@@ -401,7 +395,7 @@ pub struct ProgramGraph {
 
 ###### Serialization with `odered_programs`
 
-The `#[serde(serialize_with = "odered_programs")]` line is a Serde attribute that specifies the custom serialization function for the programs field. The odered_programs function sorts the programs by their root.start value before serializing them.
+The `#[serde(serialize_with = "odered_programs")]` line is a Serde attribute that specifies the custom serialization function for the programs field. The odered_programs function sorts the programs by their root.start_date value before serializing them.
 
 ```rust
 fn odered_programs<S>(value: &[Program], serializer: S) -> Result<S::Ok, S::Error>
@@ -409,7 +403,7 @@ where
     S: Serializer,
 {
     let mut value = value.to_owned();
-    value.sort_by_key(|program| program.root.start);
+    value.sort_by_key(|program| program.root.start_date);
 
     value.serialize(serializer)
 }
@@ -418,16 +412,16 @@ where
 
 ###### Partial Equality with `PartialEq` Implementation
 
-The `PartialEq` implementation for `ProgramGraph` sorts the programs field by their root.start value before checking for equality.
+The `PartialEq` implementation for `ProgramGraph` sorts the programs field by their root.start_date value before checking for equality.
 
 ```rust
 impl PartialEq for ProgramGraph {
     fn eq(&self, other: &Self) -> bool {
         // sort the programs by root start date before equality check
         let mut these_programs = self.programs.clone();
-        these_programs.sort_by_key(|program| program.root.start);
+        these_programs.sort_by_key(|program| program.root.start_date);
         let mut those_programs = other.programs.clone();
-        those_programs.sort_by_key(|program| program.root.start);
+        those_programs.sort_by_key(|program| program.root.start_date);
 
         these_programs == those_programs
     }
@@ -469,10 +463,10 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                     tracing::debug!(feature_id, "...");
                     value.feature_data.map(|feature_data| Feature {
                         id: feature_data.id.clone(),
-                        start: feature_data.StartDate,
-                        end: feature_data.EndDate,
-                        AssignedTeam: feature_data.AssignedTeam.clone(),
-                        ProgressStatus: feature_data.ProgressStatus.clone(),
+                        start_date: feature_data.start_date,
+                        end_date: feature_data.end_date,
+                        assigned_team: feature_data.assigned_team.clone(),
+                        progress_status: feature_data.progress_status.clone(),
                         subfeatures: resolve_subfeatures(value.children.clone(), mappings),
                     })
                 })
@@ -538,13 +532,13 @@ impl From<Vec<RawFeature>> for ProgramGraph {
         for root in roots {
             if let Some(feature_data) = root.feature_data {
                 let program = Program {
-                    id: feature_data.ProgramID.clone(),
+                    id: feature_data.program_id.clone(),
                     root: Feature {
                         id: feature_data.id.clone(),
-                        start: feature_data.StartDate,
-                        end: feature_data.EndDate,
-                        AssignedTeam: feature_data.AssignedTeam.clone(),
-                        ProgressStatus: feature_data.ProgressStatus.clone(),
+                        start_date: feature_data.start_date,
+                        end_date: feature_data.end_date,
+                        assigned_team: feature_data.assigned_team.clone(),
+                        progress_status: feature_data.progress_status.clone(),
                         subfeatures: resolve_subfeatures(root.children.clone(), &mappings),
                     },
                 };
