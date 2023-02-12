@@ -28,9 +28,9 @@ fn main() -> anyhow::Result<()> {
     // Read CLI arguments
     let args: Vec<String> = env::args().collect();
 
-    // one day you can do if-let chains, like:
+    // one day we can do if-let chains, like:
     // if let arg_len = args.len() && arg_len > 2 {
-    // so that you can use the variable, as well as specify the condition for the if block
+    // so that we can use the variable, as well as specify the condition for the if block
     if args.len() > 2 {
         tracing::warn!("additional arguments supplied and will be ignored");
     }

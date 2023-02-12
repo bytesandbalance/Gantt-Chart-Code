@@ -1,0 +1,35 @@
+{
+    "id": "program_1",
+    "root": {
+        "feature": "Productivity_Suite",
+        "start": "2023-01-01T00:00:00.000Z",
+        "end": "2023-12-31T00:00:00.000Z",
+        "subfeatures": [
+            {
+                "feature": "Email",
+                "start": "2023-01-01T00:00:00.000Z",
+                "end": "2023-06-30T00:00:00.000Z",
+                "subfeatures": [
+                    {
+                        "feature": "Email_Search",
+                        "start": "2023-01-01T00:00:00.000Z",
+                        "end": "2023-04-30T00:00:00.000Z",
+                        "subfeatures": [],
+                        "progress_status": "Complete",
+                        "assigned_team": "Team_B"
+                    },
+                    {
+                        "feature": "Email_Filters",
+                        "start": "2023-05-01T00:00:00.000Z",
+                        "end": "2023-06-301T00:00:00.000Z",
+                        "subfeatures": [],
+                        "progress_status": "Complete",
+                        "assigned_team": "Team_B"
+                    }
+                ]
+            }
+        ],
+        "progress_status": "Complete",
+        "assigned_team": "Team_A"
+    }
+}

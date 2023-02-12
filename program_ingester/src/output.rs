@@ -1,8 +1,18 @@
+/// This needs documentation then I can write the main story
 use chrono::FixedOffset;
 use serde::{Serialize, Serializer};
 
 use crate::input::{FeatureDataAndChildren, FeatureID, FeatureMap, RawFeature};
 
+
+/// The lines #[derive(Debug, Serialize, Clone)] use Rust's "derive" macro to automatically generate implementations for the "Debug",
+/// "Serialize", and "Clone" traits for the Feature struct. This means that instances of Feature can be debugged, serialized
+/// (converted to a format like JSON or BSON), and cloned (duplicated).
+// /The line #[serde(rename = "feature")] uses Serde's "serde" attribute to
+/// specify that the "id" field should be renamed to "feature" when serializing or deserializing instances of Feature.
+/// The line #[serde(serialize_with = "odered_features")] uses Serde's "serde" attribute to specify that the "subfeatures"
+/// field should be serialized using a custom serialization function named "odered_features". This allows for custom logic
+/// to be used when serializing the subfeatures field.
 #[derive(Debug, Serialize, Clone)]
 pub struct Feature {
     #[serde(rename = "feature")]
@@ -15,7 +25,21 @@ pub struct Feature {
     pub subfeatures: Vec<Feature>,
 }
 
-/// Custom serializer for [Feature]
+
+/// The given code defines a function named "odered_features", which is a custom serializer for instances of the Feature struct.
+/// The function takes in a slice of Feature objects, "value", and a Serde serializer, "serializer".
+/// The function sorts the input slice of Feature objects by the "start" field and then serializes the sorted slice using the provided serializer.
+/// The function returns a Result type that represents the outcome of the serialization process.
+/// If the serialization is successful, the result will contain the serialized value of type S::Ok.
+/// If an error occurs during serialization, the result will contain an error value of type S::Error.
+/// The function uses the "where" clause to specify that the type of the serializer must implement the "Serializer" trait.
+/// This allows the function to be used with any serializer that implements this trait, making it more flexible and reusable.
+/// The method to_owned() is a method that creates a new owned value (a deep copy) from a borrowed value, such as a reference.
+/// In this case, the method is used to convert the input slice of Feature objects, "value", into an owned vector of Feature objects.
+/// This is necessary because the sorting operation needs to modify the contents of the vector, and a reference to the original slice cannot be modified.
+/// By creating an owned copy, the original data remains unchanged, and the sort operation can be performed on the copy.
+
+//// Custom serializer for [Feature]
 fn odered_features<S>(value: &[Feature], serializer: S) -> Result<S::Ok, S::Error>
 where
     S: Serializer,
@@ -81,6 +105,24 @@ impl PartialEq for ProgramGraph {
     }
 }
 
+
+/// This code takes a vector of RawFeature objects and transforms it into a ProgramGraph object.
+/// It does so by first creating a mapping of parent to children feature IDs
+/// and then using this mapping to resolve the subfeatures of each feature.
+
+/// The first step in the transformation is to build the mapping by upserting
+/// each feature and its parent. If a feature or its parent already exists in the mapping,
+/// it is updated, otherwise it is inserted with the given information.
+
+/// Once the mapping is built, the code filters out the root features,
+/// which are the features that don't have a parent. For each root feature,
+/// the code creates a Program object by resolving its subfeatures and then pushes it into the ProgramGraph object.
+
+/// The code uses a helper function, resolve_subfeatures,
+/// to resolve the subfeatures of a feature. It takes a list of child feature
+/// IDs and the mapping and returns a list of Feature objects by filtering the mapping and transforming the filtered values into Feature objects.
+
+
 /// Transform a vector of [`RawFeature`] into a [`ProgramGraph`]
 impl From<Vec<RawFeature>> for ProgramGraph {
     fn from(value: Vec<RawFeature>) -> Self {
@@ -107,7 +149,7 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                         id: feature_data.id.clone(),
                         start: feature_data.start_time,
                         end: feature_data.end_time,
-                        assigned_team: feature_data.assigned_team,
+                        assigned_team: feature_data.assigned_team.clone(),
                         progress_status: feature_data.progress_status.clone(),
                         subfeatures: resolve_subfeatures(value.children.clone(), mappings),
                     })
@@ -179,7 +221,7 @@ impl From<Vec<RawFeature>> for ProgramGraph {
                         id: feature_data.id.clone(),
                         start: feature_data.start_time,
                         end: feature_data.end_time,
-                        assigned_team: feature_data.assigned_team,
+                        assigned_team: feature_data.assigned_team.clone(),
                         progress_status: feature_data.progress_status.clone(),
                         subfeatures: resolve_subfeatures(root.children.clone(), &mappings),
                     },

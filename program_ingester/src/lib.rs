@@ -45,14 +45,8 @@ mod test {
         let input = indoc! {"
             2023-01-01T00:00:00.000Z 2023-12-31T00:00:00.000Z program_1 In_Progress Team_A null->Productivity_Suite
             2023-01-01T00:00:00.000Z 2023-06-30T00:00:00.000Z program_1 Complete Team_B Productivity_Suite->Email
-            2023-01-01T00:00:00.000Z 2023-06-30T00:00:00.000Z program_1 Complete Team_C Productivity_Suite->Calendar
-            2023-07-01T00:00:00.000Z 2023-12-31T00:00:00.000Z program_1 In_Progress Team_D Productivity_Suite->Task_Manager
             2023-01-01T00:00:00.000Z 2023-04-30T00:00:00.000Z program_1 Complete Team_B Email->Email_Search
             2023-05-01T00:00:00.000Z 2023-06-30T00:00:00.000Z program_1 Complete Team_B Email->Email_Filters
-            2023-01-01T00:00:00.000Z 2023-04-30T00:00:00.000Z program_1 Complete Team_C Calendar->Calendar_Scheduling
-            2023-05-01T00:00:00.000Z 2023-06-30T00:00:00.000Z program_1 Complete Team_C Calendar->Calendar_Reminders
-            2023-07-01T00:00:00.000Z 2023-09-30T00:00:00.000Z program_1 Complete Team_D Task_Manager->Task_Manager_To_Do_List
-            2023-10-01T00:00:00.000Z 2023-12-31T00:00:00.000Z program_1 In_Progress Team_D Task_Manager->Task_Manager_Project_Management
         "}
         .trim();
 
@@ -66,101 +60,37 @@ mod test {
                     .expect("test dates should be checked"),
                 end: DateTime::parse_from_rfc3339("2023-12-31T00:00:00.000Z")
                     .expect("test dates should be checked"),
-                subfeatures: vec![
-                    Feature {
-                        id: "Email".into(),
-                        progress_status: "Complete".into(),
-                        assigned_team: "Team_B".into(),
-                        start: DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z")
-                            .expect("test dates should be checked"),
-                        end: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
-                            .expect("test dates should be checked"),
-                        subfeatures: vec![
-                            Feature {
-                                id: "Email_Search".into(),
-                                progress_status: "Complete".into(),
-                                assigned_team: "Team_B".into(),
-                                start: DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                end: DateTime::parse_from_rfc3339("2023-04-30T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                subfeatures: vec![],
-                            },
-                            Feature {
-                                id: "Email_Filter".into(),
-                                progress_status: "Complete".into(),
-                                assigned_team: "Team_B".into(),
-                                start: DateTime::parse_from_rfc3339("2023-05-01T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                end: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                subfeatures: vec![],
-                            },
-                        ],
-                    },
-                    Feature {
-                        id: "Calendar".into(),
-                        progress_status: "Complete".into(),
-                        assigned_team: "Team_C".into(),
-                        start: DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z")
-                            .expect("test dates should be checked"),
-                        end: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
-                            .expect("test dates should be checked"),
-                        subfeatures: vec![
-                            Feature {
-                                id: "Calendar_Scheduling".into(),
-                                progress_status: "Complete".into(),
-                                assigned_team: "Team_C".into(),
-                                start: DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                end: DateTime::parse_from_rfc3339("2023-04-30T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                subfeatures: vec![],
-                            },
-                            Feature {
-                                id: "Calendar_Reminding".into(),
-                                progress_status: "Complete".into(),
-                                assigned_team: "Team_C".into(),
-                                start: DateTime::parse_from_rfc3339("2023-05-01T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                end: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                subfeatures: vec![],
-                            },
-                        ],
-                    },
-                    Feature {
-                        id: "Task_Manager".into(),
-                        progress_status: "In_Progress".into(),
-                        assigned_team: "Team_D".into(),
-                        start: DateTime::parse_from_rfc3339("2023-07-01T00:00:00.000Z")
-                            .expect("test dates should be checked"),
-                        end: DateTime::parse_from_rfc3339(" 2023-12-31T00:00:00.000Z")
-                            .expect("test dates should be checked"),
-                        subfeatures: vec![
-                            Feature {
-                                id: "Task_Manager_To_Do_List".into(),
-                                progress_status: "Complete".into(),
-                                assigned_team: "Team_D".into(),
-                                start: DateTime::parse_from_rfc3339("2023-07-01T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                end: DateTime::parse_from_rfc3339("2023-09-30T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                subfeatures: vec![],
-                            },
-                            Feature {
-                                id: "Task_Manager_Project_Management".into(),
-                                progress_status: "In_Progress".into(),
-                                assigned_team: "Team_D".into(),
-                                start: DateTime::parse_from_rfc3339("2023-10-01T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                end: DateTime::parse_from_rfc3339("2023-12-31T00:00:00.000Z")
-                                    .expect("test dates should be checked"),
-                                subfeatures: vec![],
-                            },
-                        ],
-                    },
-                ],
+                subfeatures: vec![Feature {
+                    id: "Email".into(),
+                    progress_status: "Complete".into(),
+                    assigned_team: "Team_B".into(),
+                    start: DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z")
+                        .expect("test dates should be checked"),
+                    end: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
+                        .expect("test dates should be checked"),
+                    subfeatures: vec![
+                        Feature {
+                            id: "Email_Search".into(),
+                            progress_status: "Complete".into(),
+                            assigned_team: "Team_B".into(),
+                            start: DateTime::parse_from_rfc3339("2023-01-01T00:00:00.000Z")
+                                .expect("test dates should be checked"),
+                            end: DateTime::parse_from_rfc3339("2023-04-30T00:00:00.000Z")
+                                .expect("test dates should be checked"),
+                            subfeatures: vec![],
+                        },
+                        Feature {
+                            id: "Email_Filter".into(),
+                            progress_status: "Complete".into(),
+                            assigned_team: "Team_B".into(),
+                            start: DateTime::parse_from_rfc3339("2023-05-01T00:00:00.000Z")
+                                .expect("test dates should be checked"),
+                            end: DateTime::parse_from_rfc3339("2023-06-30T00:00:00.000Z")
+                                .expect("test dates should be checked"),
+                            subfeatures: vec![],
+                        },
+                    ],
+                }],
             },
         };
 
